@@ -83,9 +83,98 @@ public class CheckConnectYG : MonoBehaviour
 
 ### – 2 Практическая работа «Сохранение данных пользователя на платформе Яндекс Игры»
 Ход работы:
+1) Напишем скрипты, с помощью которых будет осуществляться подсчет и сохранение очков игрока.
 
 ```
-``` 
+namespace YG
+{
+    [System.Serializable]
+    public class SavesYG
+    {
+        public bool isFirstSession = true;
+        public string language = "ru";
+        public bool feedbackDone;
+        public bool promptDone;
+
+        // Ваши сохранения
+        public int score;
+    }
+}
+```
+
+```
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using YG;
+using TMPro;
+
+public class DragonPicker : MonoBehaviour
+{
+    private void OnEnable() => YandexGame.GetDataEvent += GetLoadSave;
+    private void OnDisable() => YandexGame.GetDataEvent -= GetLoadSave;
+
+    public GameObject energyShieldPrefab;
+    public int numEnergyShield = 3;
+    public float energyShieldBottomY = -6f;
+    public float energyShieldRadius = 1.5f;
+    public List<GameObject> shieldList;
+    public TextMeshProUGUI scoreGT;
+    void Start()
+    {
+        if(YandexGame.SDKEnabled == true)
+        {
+            GetLoadSave();
+        }
+        shieldList = new List<GameObject>();
+        for (int i = 1; i <= numEnergyShield; i++){
+            GameObject tShiedGo = Instantiate<GameObject>(energyShieldPrefab);
+            tShiedGo.transform.position = new Vector3(0, energyShieldBottomY, 0);
+            tShiedGo.transform.localScale = new Vector3(1*i, 1*i, 1*i);
+            shieldList.Add(tShiedGo);
+        }
+        
+    }
+
+    void Update()
+    {
+        
+    }
+
+    public void DragonEggDestroyed(){
+        GameObject[] tDragonEggArray = GameObject.FindGameObjectsWithTag("Dragon Egg");
+        foreach (var tGO in tDragonEggArray)
+        {
+            Destroy(tGO);
+        }
+        int shieldIndex = shieldList.Count - 1;
+        GameObject tShieldGo = shieldList[shieldIndex];
+        shieldList.RemoveAt(shieldIndex);
+        Destroy(tShieldGo);
+        if (shieldList.Count == 0){
+            GameObject scoreGO = GameObject.Find("Score");
+            scoreGT = scoreGO.GetComponent<TextMeshProUGUI>();
+            UserSave(int.Parse(scoreGT.text));
+            SceneManager.LoadScene("_0Scene");
+            GetLoadSave();
+        }
+    }
+    public void GetLoadSave()
+    {
+        Debug.Log(YandexGame.savesData.score);
+    }
+
+    public void UserSave( int currentScore)
+    {
+        YandexGame.savesData.score = currentScore;
+        YandexGame.SaveProgress();
+    }
+}
+```
+
+2) Сделаем билд проекта и выгрузим на Яндекс Игры. Запустим игру и проверим, как будут записываться набранные очки. Когда впервые запустили игру, у нас изначально 0 очков. После 3 набранных очков проигрываем. Сохраняются эти 3 очка. При перезапуске игры мы все так же видим эти 3 очка, что говорит о том, что результат пользователя сохранился на платформе.
+
 
 ### – 3 Практическая работа «Сбор данных об игроке и вывод их в интерфейсе»
 Ход работы:
