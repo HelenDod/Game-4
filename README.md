@@ -178,7 +178,162 @@ public class DragonPicker : MonoBehaviour
 
 ### – 3 Практическая работа «Сбор данных об игроке и вывод их в интерфейсе»
 Ход работы:
+1) Сделаем так, чтобы у нас отображалось лучшее значение очков, которые набрал пользователь. Для этого на начальной сцене создадим объект TextMeshPro и настроим его местоположение в правом нижнем углу экрана.
 
+
+2) Напишем скрипт, чтоб наилучшие набранные игроком очки могли записываться в Best Score.
+
+```
+namespace YG
+{
+    [System.Serializable]
+    public class SavesYG
+    {
+        public bool isFirstSession = true;
+        public string language = "ru";
+        public bool feedbackDone;
+        public bool promptDone;
+
+        // Ваши сохранения
+        public int score;
+        public int bestScore = 0;
+    }
+}
+```
+
+```
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using YG;
+using TMPro;
+
+public class DragonPicker : MonoBehaviour
+{
+    private void OnEnable() => YandexGame.GetDataEvent += GetLoadSave;
+    private void OnDisable() => YandexGame.GetDataEvent -= GetLoadSave;
+
+    public GameObject energyShieldPrefab;
+    public int numEnergyShield = 3;
+    public float energyShieldBottomY = -6f;
+    public float energyShieldRadius = 1.5f;
+    public List<GameObject> shieldList;
+    public TextMeshProUGUI scoreGT;
+    void Start()
+    {
+        if(YandexGame.SDKEnabled == true)
+        {
+            GetLoadSave();
+        }
+        shieldList = new List<GameObject>();
+        for (int i = 1; i <= numEnergyShield; i++)
+        {
+            GameObject tShiedGo = Instantiate<GameObject>(energyShieldPrefab);
+            tShiedGo.transform.position = new Vector3(0, energyShieldBottomY, 0);
+            tShiedGo.transform.localScale = new Vector3(1*i, 1*i, 1*i);
+            shieldList.Add(tShiedGo);
+        }
+        
+    }
+
+    void Update()
+    {
+        
+    }
+
+    public void DragonEggDestroyed()
+    {
+        GameObject[] tDragonEggArray = GameObject.FindGameObjectsWithTag("Dragon Egg");
+        foreach (var tGO in tDragonEggArray)
+        {
+            Destroy(tGO);
+        }
+        int shieldIndex = shieldList.Count - 1;
+        GameObject tShieldGo = shieldList[shieldIndex];
+        shieldList.RemoveAt(shieldIndex);
+        Destroy(tShieldGo);
+        if (shieldList.Count == 0)
+        {
+            GameObject scoreGO = GameObject.Find("Score");
+            scoreGT = scoreGO.GetComponent<TextMeshProUGUI>();
+            UserSave(int.Parse(scoreGT.text), YandexGame.savesData.bestScore);
+            SceneManager.LoadScene("_0Scene");
+            GetLoadSave();
+        }
+    }
+    public void GetLoadSave()
+    {
+        Debug.Log(YandexGame.savesData.score);
+    }
+
+    public void UserSave(int currentScore, int currentBestScore)
+    {
+        YandexGame.savesData.score = currentScore;
+        if (currentScore > currentBestScore)
+        {
+            YandexGame.savesData.bestScore = currentScore;
+        }
+        YandexGame.SaveProgress();
+    }
+}
+```
+
+```
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using YG;
+using TMPro;
+
+public class CheckConnectYG : MonoBehaviour
+{
+    private void OnEnable() => YandexGame.GetDataEvent += CheckSDK;
+    private void OnDisable() => YandexGame.GetDataEvent -= CheckSDK;
+    private TextMeshProUGUI scoreBest;
+    void Start()
+    {
+        if(YandexGame.SDKEnabled == true)
+        {
+            CheckSDK();
+        }
+    }
+
+    public void CheckSDK()
+    {
+        if (YandexGame.auth == true)
+        {
+            Debug.Log("User authorization ok");
+        }
+        else
+        {
+            Debug.Log("User not authorization");
+            YandexGame.AuthDialog();
+        }
+        GameObject scoreBO = GameObject.Find("BestScore");
+        scoreBest = scoreBO.GetComponent<TextMeshProUGUI>();
+        scoreBest.text = YandexGame.savesData.bestScore.ToString();
+        scoreBest.text = "Best Score: " + YandexGame.savesData.bestScore.ToString();
+    }
+}
+```
+
+3) Снова делаем билд и загружаем на Яндекс Игры. После проигрыша у нас отображается максимально набранное количество очков.
+
+4) Добавим имя игрока на экран. Создадим TextMeshPro PlayerName и зададим расположение над магом.
+
+5) Напишем код в скрипте Dragon Picker, отвечающий за отображение имени на экране.
+
+ ```
+ public void GetLoadSave()
+    {
+        Debug.Log(YandexGame.savesData.score);
+        GameObject playerNamePrefabGUI = GameObject.Find("PlayerName");
+        playerName = playerNamePrefabGUI.GetComponent<TextMeshProUGUI>();
+        playerName.text = YandexGame.playerName;
+    }
+ ```
+При запуске мы можем видеть имя на экране.
 
 ### – 4 Практическая работа «Интеграция таблицы лидеров»
 Ход работы:
