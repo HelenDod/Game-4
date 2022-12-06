@@ -535,6 +535,8 @@ public class DragonPicker : MonoBehaviour
 }
 ```
 
+https://user-images.githubusercontent.com/90499063/205886535-5726f337-e6d0-4216-9288-ab30c17f23bd.mp4
+
 ## Задание 2
 ### Описать не менее трех дополнительных функций Яндекс SDK, которые могут быть интегрированы в игру.
 Ход работы:
