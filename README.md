@@ -370,7 +370,170 @@ UserSave(int.Parse(scoreGT.text), YandexGame.savesData.bestScore);
 2) Визуально настроим окно достижений.
 ![image (13)](https://user-images.githubusercontent.com/90499063/205881262-095e3ab3-2e1a-4b41-b827-2139cfe03c18.png)
 
-3) Напишем скрипт, который отвечает за обработку данных достижений пользователя.
+3) Напишем скрипты, которые отвечают за обработку данных достижений пользователя. Так выглядят финальные строки.
+
+```
+namespace YG
+{
+    [System.Serializable]
+    public class SavesYG
+    {
+        public bool isFirstSession = true;
+        public string language = "ru";
+        public bool feedbackDone;
+        public bool promptDone;
+
+        // Ваши сохранения
+        public int score;
+        public int bestScore = 0;
+        public string[] achivMent = new string[5];
+    }
+}
+```
+
+```
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using YG;
+using TMPro;
+
+public class CheckConnectYG : MonoBehaviour
+{
+    private void OnEnable() => YandexGame.GetDataEvent += CheckSDK;
+    private void OnDisable() => YandexGame.GetDataEvent -= CheckSDK;
+    [SerializeField] private TextMeshProUGUI scoreBest;
+    [SerializeField] private TextMeshProUGUI ListAchiv;
+    [SerializeField] private TextMeshProUGUI achivList;
+    void Start()
+    {
+        if(YandexGame.SDKEnabled == true)
+        {
+            CheckSDK();
+        }
+    }
+
+    public void CheckSDK()
+    {
+        if (YandexGame.auth == true)
+        {
+            Debug.Log("User authorization ok");
+        }
+        else
+        {
+            Debug.Log("User not authorization");
+            YandexGame.AuthDialog();
+        }
+        GameObject scoreBO = GameObject.Find("BestScore");
+        scoreBest = scoreBO.GetComponent<TextMeshProUGUI>();
+        scoreBest.text = "Best Score: " + YandexGame.savesData.bestScore.ToString();
+        if ((YandexGame.savesData.achivMent)[0] == null & !GameObject.Find("ListAchiv"))
+        {
+
+        }
+        else
+        {
+            foreach(string value in YandexGame.savesData.achivMent)
+            {
+                Debug.Log(value + "Nice!");
+                GameObject ListAchiv = GameObject.Find("ListAchiv");
+                achivList.text = value.ToString() + "\n";
+                //GameObject.Find("ListAchiv").GetComponent<TextMeshProUGUI>().text = 
+                //GameObject.Find("ListAchiv").GetComponent<TextMeshProUGUI>().text + value + '\n';
+            }
+        }
+    }
+}
+```
+
+```
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using YG;
+using TMPro;
+
+public class DragonPicker : MonoBehaviour
+{
+    private void OnEnable() => YandexGame.GetDataEvent += GetLoadSave;
+    private void OnDisable() => YandexGame.GetDataEvent -= GetLoadSave;
+
+    [SerializeField] public GameObject energyShieldPrefab;
+    [SerializeField] private int numEnergyShield = 3;
+    [SerializeField] private float energyShieldBottomY = -6f;
+    [SerializeField] private float energyShieldRadius = 1.5f;
+    [SerializeField] private TextMeshProUGUI scoreGT;
+    [SerializeField] private TextMeshProUGUI playerName;
+    public List<GameObject> shieldList;
+    void Start()
+    {
+        if(YandexGame.SDKEnabled == true)
+        {
+            GetLoadSave();
+        }
+        shieldList = new List<GameObject>();
+        for (int i = 1; i <= numEnergyShield; i++)
+        {
+            GameObject tShiedGo = Instantiate<GameObject>(energyShieldPrefab);
+            tShiedGo.transform.position = new Vector3(0, energyShieldBottomY, 0);
+            tShiedGo.transform.localScale = new Vector3(1*i, 1*i, 1*i);
+            shieldList.Add(tShiedGo);
+        }
+        
+    }
+
+    void Update()
+    {
+        
+    }
+
+    public void DragonEggDestroyed()
+    {
+        GameObject[] tDragonEggArray = GameObject.FindGameObjectsWithTag("Dragon Egg");
+        foreach (var tGO in tDragonEggArray)
+        {
+            Destroy(tGO);
+        }
+        int shieldIndex = shieldList.Count - 1;
+        GameObject tShieldGo = shieldList[shieldIndex];
+        shieldList.RemoveAt(shieldIndex);
+        Destroy(tShieldGo);
+
+        if (shieldList.Count == 0)
+        {
+            GameObject scoreGO = GameObject.Find("Score");
+            scoreGT = scoreGO.GetComponent<TextMeshProUGUI>();
+            string[] achivList;
+            achivList = YandexGame.savesData.achivMent;
+            achivList[0] = "Береги щиты!";
+            Debug.Log(achivList[0]);
+            UserSave(int.Parse(scoreGT.text), YandexGame.savesData.bestScore, achivList);
+            YandexGame.NewLeaderboardScores("TOPPlayerScore", int.Parse(scoreGT.text));
+            SceneManager.LoadScene("_0Scene");
+            GetLoadSave();
+        }
+    }
+    public void GetLoadSave()
+    {
+        Debug.Log(YandexGame.savesData.score);
+        GameObject playerNamePrefabGUI = GameObject.Find("PlayerName");
+        playerName = playerNamePrefabGUI.GetComponent<TextMeshProUGUI>();
+        playerName.text = YandexGame.playerName;
+    }
+
+    public void UserSave(int currentScore, int currentBestScore, string[] currentAchiv)
+    {
+        YandexGame.savesData.score = currentScore;
+        if (currentScore > currentBestScore)
+        {
+            YandexGame.savesData.bestScore = currentScore;
+        }
+        YandexGame.savesData.achivMent = currentAchiv;
+        YandexGame.SaveProgress();
+    }
+}
+```
 
 ## Задание 2
 ### Описать не менее трех дополнительных функций Яндекс SDK, которые могут быть интегрированы в игру.
